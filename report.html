@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Analysis Report</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; padding: 2rem; background: #f5f5f5; color: #1a1a1a; }
+        h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+        .meta { color: #888; font-size: 13px; margin-bottom: 1.5rem; }
+        .latency-summary { font-size: 12px; color: #666; margin-bottom: 1.5rem; 
+                           background: white; padding: 8px 14px; border-radius: 6px; 
+                           display: inline-block; }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); 
+                   gap: 12px; margin-bottom: 2rem; }
+        .card { background: white; border-radius: 8px; padding: 1rem 1.25rem; }
+        .card-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .card-value { font-size: 24px; font-weight: 500; }
+        table { width: 100%; border-collapse: collapse; background: white; 
+                border-radius: 8px; overflow: hidden; }
+        th { background: #f1f0eb; padding: 12px 16px; text-align: left; 
+             font-size: 12px; font-weight: 500; color: #555; 
+             text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 12px 16px; font-size: 13px; 
+             border-top: 1px solid #eee; vertical-align: top; }
+        tr:hover { background: #fafafa; }
+        code { background: #f1f0eb; padding: 2px 6px; border-radius: 4px; 
+               font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Stock Analysis — Prompting Strategy Comparison</h1>
+    <div class="meta">Generated 2026-03-15 22:41</div>
+    <div class="latency-summary">zero_shot: 5541ms avg | few_shot: 3630ms avg | chain_of_thought: 11124ms avg</div>
+
+    <div class="summary">
+        <div class="card">
+            <div class="card-label">Tickers analyzed</div>
+            <div class="card-value">3</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Total strategy runs</div>
+            <div class="card-value">9</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Format accuracy</div>
+            <div class="card-value">100%</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Ticker</th>
+                <th>Strategy</th>
+                <th>Latency</th>
+                <th>Format</th>
+                <th>Signal</th>
+                <th>Analysis</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>AAPL</td>
+                <td><code>zero_shot</code></td>
+                <td>5286ms</td>
+                <td>✓</td>
+                <td><span style='color:#E24B4A;font-weight:500'>SELL</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: Bearish downward trend with declining prices from $264.72 to $257.46 over 5 days, representing a 2.7% decline.<br><br>OBSERVATIONS: Stock opened strong at $262.41 and peaked at $264.72 on March 2nd, but has shown consistent deterioration since then. Volume spiked significantly on March 5th (49.8M vs average ~42M) coinciding with accelerated selling pressure. Daily closes have been progressively lower with intraday volatility increasing, suggesting weakening buyer support at current levels.<br><br>SIGNAL: SELL — The consistent downward momentum combined with elevated selling volume indicates bearish sentiment is strengthening and further downside is likely in the near term.
+                </td>
+            </tr>
+            <tr>
+                <td>AAPL</td>
+                <td><code>few_shot</code></td>
+                <td>3758ms</td>
+                <td>✓</td>
+                <td><span style='color:#E24B4A;font-weight:500'>SELL</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: AAPL shows a declining trend, losing 2.7% over 5 days with a clear pattern of lower highs and lower lows.<br><br>OBSERVATIONS: Volume spiked significantly on March 5th (49.8M vs average ~40M) during a down day, indicating increased selling pressure, while other days maintained relatively consistent volume levels.<br><br>SIGNAL: SELL — The combination of consistent downward price action and elevated volume on red days suggests bearish momentum with potential for further decline.
+                </td>
+            </tr>
+            <tr>
+                <td>AAPL</td>
+                <td><code>chain_of_thought</code></td>
+                <td>10647ms</td>
+                <td>✓</td>
+                <td><span style='color:#E24B4A;font-weight:500'>SELL</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    Let me analyze AAPL step by step using the provided data.<br><br>**Step 1: Identify the overall price direction**<br>- March 2: Close $264.72<br>- March 3: Close $263.75 (-$0.97)<br>- March 4: Close $262.52 (-$1.23)<br>- March 5: Close $260.29 (-$2.23)<br>- March 6: Close $257.46 (-$2.83)<br><br>The stock shows a clear downward trend, declining from $264.72 to $257.46 over 5 days, representing a -2.74% decline.<br><br>**Step 2: Analyze volume patterns and what they indicate**<br>- March 2: 42,020,588 volume<br>- March 3: 38,686,890 volume (lower)<br>- March 4: 39,959,953 volume (slight increase)<br>- March 5: 49,818,541 volume (significant spike +25%)<br>- March 6: 41,273,884 volume (decreased but still elevated)<br><br>Volume spiked notably on March 5th when the stock had its largest single-day decline, indicating increased selling pressure and investor concern.<br><br>**Step 3: Look for any significant price gaps or anomalies**<br>- March 5th shows a gap down opening ($260.79 vs previous close of $262.52), indicating negative sentiment<br>- The March 5th session had both the largest price decline and highest volume, suggesting potential capitulation or negative news impact<br>- No significant upward gaps observed<br><br>**Step 4: Based on steps 1-3, determine the signal**<br>The combination of consistent price decline, volume spike during the worst performing day, and gap-down opening suggests strong bearish momentum with institutional selling pressure.<br><br>TREND: Bearish downtrend with declining closes over 5 consecutive sessions<br>OBSERVATIONS: Volume spike on March 5th coincided with the largest price decline and gap-down opening, indicating selling pressure and negative sentiment<br>SIGNAL: SELL — The consistent downward price action combined with elevated volume during declines suggests continued bearish momentum.
+                </td>
+            </tr>
+            <tr>
+                <td>GOOGL</td>
+                <td><code>zero_shot</code></td>
+                <td>6096ms</td>
+                <td>✓</td>
+                <td><span style='color:#BA7517;font-weight:500'>HOLD</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: Bearish downtrend over the 5-day period, with GOOGL declining from $306.52 to $298.52 (approximately 2.6% decrease).<br><br>OBSERVATIONS: The stock shows consistent selling pressure with lower highs and lower lows. Volume was elevated during the decline on March 3rd and 5th (35.6M and 35.9M respectively), suggesting institutional selling. The gap down opening on March 6th ($296.09 vs previous close of $300.88) indicates continued bearish sentiment, though the stock recovered slightly to close at $298.52.<br><br>SIGNAL: HOLD — The downtrend appears to be losing momentum with reduced volume on the final day and a recovery from the gap-down opening, suggesting potential stabilization around the $298-300 level.
+                </td>
+            </tr>
+            <tr>
+                <td>GOOGL</td>
+                <td><code>few_shot</code></td>
+                <td>3751ms</td>
+                <td>✓</td>
+                <td><span style='color:#BA7517;font-weight:500'>HOLD</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: GOOGL shows a declining trend, losing 2.6% over 5 days with lower lows and inconsistent recovery attempts.<br><br>OBSERVATIONS: Volume was elevated during decline days (March 3rd and 5th) but decreased significantly on the final day, suggesting weakening selling pressure but also lack of buying conviction.<br><br>SIGNAL: HOLD — Mixed volume signals and oversold conditions suggest waiting for clearer directional confirmation before taking action.
+                </td>
+            </tr>
+            <tr>
+                <td>GOOGL</td>
+                <td><code>chain_of_thought</code></td>
+                <td>10750ms</td>
+                <td>✓</td>
+                <td><span style='color:#BA7517;font-weight:500'>HOLD</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    Let me analyze GOOGL step by step using the provided data.<br><br>**Step 1: Identify the overall price direction**<br>Looking at the closing prices over the 5-day period:<br>- March 2: $306.52<br>- March 3: $303.58 (-2.94)<br>- March 4: $303.13 (-0.45)<br>- March 5: $300.88 (-2.25)<br>- March 6: $298.52 (-2.36)<br><br>The stock shows a clear downward trend, declining from $306.52 to $298.52, representing a total decline of $8.00 or approximately 2.6% over 5 trading days.<br><br>**Step 2: Analyze volume patterns and what they indicate**<br>Volume analysis:<br>- March 2: 34,973,580 (baseline)<br>- March 3: 35,622,439 (higher volume on decline)<br>- March 4: 29,688,656 (lower volume, consolidation)<br>- March 5: 35,912,722 (highest volume on continued decline)<br>- March 6: 25,727,327 (lowest volume)<br><br>The highest volume occurred on March 5 during a significant price drop, indicating selling pressure. The decreasing volume on March 6 suggests potential exhaustion of selling.<br><br>**Step 3: Look for any significant price gaps or anomalies**<br>- March 3: Notable gap down opening at $298.59 vs previous close of $306.52 (gap of $7.93)<br>- March 6: Another gap down opening at $296.09 vs previous close of $300.88 (gap of $4.79)<br>- Two significant downward gaps indicate bearish sentiment and potential negative news flow<br><br>**Step 4: Based on steps 1-3, determine the signal**<br><br>TREND: Bearish downtrend with declining closes over 5 consecutive days, falling from $306.52 to $298.52 (-2.6%)<br><br>OBSERVATIONS: Two significant downward price gaps, elevated volume during declines (especially March 5), and diminishing volume on the final day suggesting potential selling exhaustion<br><br>SIGNAL: HOLD — The declining volume pattern on the final day combined with consecutive days of selling suggests the downward pressure may be weakening, warranting a wait-and-see approach rather than adding to positions.
+                </td>
+            </tr>
+            <tr>
+                <td>MSFT</td>
+                <td><code>zero_shot</code></td>
+                <td>5240ms</td>
+                <td>✓</td>
+                <td><span style='color:#1D9E75;font-weight:500'>BUY</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: Strong upward momentum with consistent gains over 4 of 5 days, rising from $392.86 to a peak of $410.68 (+4.5%) before a minor pullback.<br><br>OBSERVATIONS: Daily closes consistently above opens for the first four sessions, indicating buying pressure. Volume remains elevated (31-39M range) suggesting institutional interest. The minor decline on March 6th (-$1.72) appears to be profit-taking after the strong run-up, but the stock held above $408 support level.<br><br>SIGNAL: BUY — The strong upward trend with healthy volume and minor pullback creates an attractive entry point for continued momentum.
+                </td>
+            </tr>
+            <tr>
+                <td>MSFT</td>
+                <td><code>few_shot</code></td>
+                <td>3380ms</td>
+                <td>✓</td>
+                <td><span style='color:#1D9E75;font-weight:500'>BUY</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    TREND: MSFT shows a strong upward trend, gaining 2.6% over 5 days with consistent higher highs until a minor pullback on the final day.<br><br>OBSERVATIONS: Volume increased significantly on major up days (March 3rd and 5th) and decreased on the minor down day, indicating healthy buying interest during advances.<br><br>SIGNAL: BUY — Strong bullish volume pattern with higher highs and pullback on lower volume suggests continued upward momentum.
+                </td>
+            </tr>
+            <tr>
+                <td>MSFT</td>
+                <td><code>chain_of_thought</code></td>
+                <td>11976ms</td>
+                <td>✓</td>
+                <td><span style='color:#1D9E75;font-weight:500'>BUY</span></td>
+                <td style='font-size:12px;max-width:400px'>
+                    Let me analyze MSFT step by step:<br><br>**Step 1: Identify the overall price direction**<br>The stock shows a strong upward trend over the 5-day period:<br>- March 2: $392.86 → $398.55 (+$5.69, +1.45%)<br>- March 3: $393.14 → $403.93 (+$10.79, +2.75%)<br>- March 4: $401.26 → $405.20 (+$3.94, +0.98%)<br>- March 5: $404.42 → $410.68 (+$6.26, +1.55%)<br>- March 6: $409.20 → $408.96 (-$0.24, -0.06%)<br><br>Overall gain from March 2 open to March 6 close: $16.10 (+4.10%)<br><br>**Step 2: Analyze volume patterns and what they indicate**<br>- March 2: 35.6M (baseline)<br>- March 3: 38.3M (highest volume, +7.6% increase with strong price gain)<br>- March 4: 35.9M (slightly above baseline, modest gains)<br>- March 5: 39.1M (peak volume, +9.8% increase with good price appreciation)<br>- March 6: 31.2M (significant drop, -12.3% below baseline on flat price action)<br><br>Volume supports the uptrend with higher participation during rallies.<br><br>**Step 3: Look for any significant price gaps or anomalies**<br>- No significant gaps observed; opens generally align with previous day's momentum<br>- March 6 shows the only minor decline but on reduced volume, suggesting lack of selling conviction<br>- Consistent daily gains until the final day's minor pullback<br><br>**Step 4: Based on steps 1-3, determine the signal**<br>Strong uptrend with volume confirmation during advances and weak volume on the minor pullback suggests continued bullish momentum.<br><br>TREND: Strong upward trend with 4.10% gain over 5 days, supported by higher volume during rallies<br>OBSERVATIONS: Peak volumes on March 3rd and 5th coincided with strongest price gains; final day's minor decline came on significantly reduced volume indicating lack of selling pressure<br>SIGNAL: BUY — Strong uptrend with volume confirmation and weak selling pressure suggests continued bullish momentum.
+                </td>
+            </tr></tbody>
+    </table>
+</body>
+</html>
