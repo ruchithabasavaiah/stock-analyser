@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
+from analyzer import get_stock_data, analyze_stock, check_format
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
@@ -9,6 +10,7 @@ CORS(app)
 def home():
     return send_from_directory('.', 'index.html')
 
+@app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.json
     tickers = data.get('tickers', ['AAPL'])
