@@ -78,8 +78,3 @@
         }
     }
 </script>
-```
-
-Also update your `Procfile` back to simple — gevent isn't needed with streaming:
-```
-web: gunicorn app:app --timeout 300 --workers 2
