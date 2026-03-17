@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Analyzer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f5f5f5; padding: 2rem; color: #1a1a1a; }
+        h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+        p { color: #888; font-size: 13px; margin-bottom: 2rem; }
+        .controls { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; margin-bottom: 1rem; }
+        button { background: #1a1a1a; color: white; border: none; padding: 10px 24px; border-radius: 6px; font-size: 14px; cursor: pointer; width: 100%; }
+        button:hover { background: #333; }
+        button:disabled { background: #999; cursor: not-allowed; }
+        .results { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .card { background: white; border-radius: 8px; padding: 1.25rem; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .ticker { font-size: 18px; font-weight: 500; }
+        .signal { font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 12px; }
+        .BUY { background: #EAF3DE; color: #3B6D11; }
+        .SELL { background: #FCEBEB; color: #A32D2D; }
+        .HOLD { background: #FAEEDA; color: #854F0B; }
+        .analysis { font-size: 12px; color: #555; line-height: 1.6; white-space: pre-wrap; }
+        .latency { font-size: 11px; color: #aaa; margin-top: 10px; }
+        .loading { text-align: center; color: #888; font-size: 14px; padding: 2rem; }
+        .error { background: #FCEBEB; color: #A32D2D; padding: 12px; border-radius: 6px; font-size: 13px; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <h1>AI Stock Analyzer</h1>
+    <p>Powered by Alpaca Markets API and Claude AI — comparing LLM prompting strategies</p>
+
+    <div class="controls">
+        <label>Tickers (comma separated)</label>
+        <input type="text" id="tickers" value="AAPL, GOOGL, MSFT" placeholder="AAPL, GOOGL, MSFT"/>
+
+        <label>Prompting Strategy</label>
+        <select id="strategy">
+            <option value="few_shot">Few-shot (fastest — ~3630ms avg)</option>
+            <option value="zero_shot">Zero-shot (~5541ms avg)</option>
+            <option value="chain_of_thought">Chain-of-thought (most detailed — ~11124ms avg)</option>
+        </select>
+
+        <button id="btn" onclick="analyze()">Analyze Stocks</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        async function analyze() {
+            const btn = document.getElementById('btn');
+            const resultsDiv = document.getElementById('results');
+            
+            const tickerInput = document.getElementById('tickers').value;
+            const tickers = tickerInput.split(',').map(t => t.trim().toUpperCase()).filter(t => t);
+            const strategy = document.getElementById('strategy').value;
+
+            if (tickers.length === 0) {
+                resultsDiv.innerHTML = '<div class="error">Please enter at least one ticker.</div>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+            resultsDiv.innerHTML = '<div class="loading">Fetching data and running analysis — this takes 5–15 seconds depending on strategy...</div>';
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tickers, strategy })
+                });
+
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    resultsDiv.innerHTML = '<div class="error">No data returned. Market may be closed or tickers invalid.</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = '<div class="results">' + data.map(r => `
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="ticker">${r.ticker}</span>
+                            <span class="signal ${r.signal}">${r.signal}</span>
+                        </div>
+                        <div class="analysis">${r.analysis}</div>
+                        <div class="latency">${r.latency_ms}ms · ${strategy.replace('_', '-')} · format ${r.format_correct ? '✓' : '✗'}</div>
+                    </div>
+                `).join('') + '</div>';
+
+            } catch (err) {
+                resultsDiv.innerHTML = '<div class="error">Could not connect to backend. Make sure app.py is running on port 5000.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze Stocks';
+            }
+        }
+    </script>
+</body>
+</html>
