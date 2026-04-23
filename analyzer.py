@@ -1,166 +1,98 @@
-import os
-import json
+from __future__ import annotations
+
+import asyncio
 import argparse
-import requests
-from datetime import datetime
-from anthropic import Anthropic
-from dotenv import load_dotenv
 
-load_dotenv()
-
-ALPACA_API_KEY = os.getenv("ALPACA_API_KEY")
-ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY")
-client = Anthropic()
-
-STRATEGIES = {
-    "zero_shot": lambda ticker, prices: f"""Analyze this stock data for {ticker} and give a BUY, HOLD, or SELL signal.
-
-{prices}
-
-Format exactly as:
-TREND: [summary]
-OBSERVATIONS: [observations]
-SIGNAL: [BUY/HOLD/SELL] — [one sentence reasoning]""",
-
-    "few_shot": lambda ticker, prices: f"""Here is an example of good stock analysis:
-
-TREND: NVDA shows a strong upward trend, gaining 8% over 5 days with consistent higher highs.
-OBSERVATIONS: Volume increased on up days and decreased on down days, indicating strong buying interest.
-SIGNAL: BUY — Bullish volume pattern and momentum suggest continued upside.
-
-Now analyze {ticker} using the same format:
-
-{prices}
-
-Format exactly as:
-TREND: [summary]
-OBSERVATIONS: [observations]
-SIGNAL: [BUY/HOLD/SELL] — [one sentence reasoning]""",
-
-    "chain_of_thought": lambda ticker, prices: f"""Analyze {ticker} step by step.
-
-{prices}
-
-Step 1: Identify the overall price direction
-Step 2: Analyze volume patterns and what they indicate
-Step 3: Look for any significant price gaps or anomalies
-Step 4: Based on steps 1-3, determine the signal
-
-Format your final answer exactly as:
-TREND: [summary]
-OBSERVATIONS: [observations]
-SIGNAL: [BUY/HOLD/SELL] — [one sentence reasoning]"""
-}
+from api.db import create_db, save_result
+from api.services.alpaca import format_bars, get_stock_data
+from api.services.claude import STRATEGIES, check_format, extract_signal, run_analysis
+from api.services.evaluator import detect_hallucination
+from report import generate_report
 
 
-def get_stock_data(ticker):
-    url = f"https://data.alpaca.markets/v2/stocks/{ticker}/bars"
-    headers = {
-        "APCA-API-KEY-ID": ALPACA_API_KEY,
-        "APCA-API-SECRET-KEY": ALPACA_SECRET_KEY
-    }
-    params = {
-        "timeframe": "1Day",
-        "start": "2026-03-01",
-        "end": "2026-03-14",
-        "limit": 5
-    }
-    response = requests.get(url, headers=headers, params=params)
-    return response.json()
-
-
-def analyze_stock(ticker, price_data, strategy_name):
+async def analyze_ticker_strategy(
+    ticker: str, price_data: dict, strategy_name: str
+) -> dict | None:
     bars = price_data.get("bars", [])
     if not bars:
-        return None, 0
+        print(f"  [{ticker}] No data available")
+        return None
 
-    prices = "\n".join([
-        f"Date: {b['t'][:10]}, Open: ${b['o']:.2f}, Close: ${b['c']:.2f}, Volume: {b['v']}"
-        for b in bars
-    ])
+    prices = format_bars(bars)
+    analysis, latency_ms, input_tokens, output_tokens = await run_analysis(ticker, prices, strategy_name)
+    signal = extract_signal(analysis)
+    format_correct = check_format(analysis)
+    hall = detect_hallucination(analysis, prices)
 
-    prompt = STRATEGIES[strategy_name](ticker, prices)
-
-    start_time = datetime.now()
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
-        messages=[{"role": "user", "content": prompt}]
+    save_result(
+        ticker, strategy_name, signal, latency_ms, format_correct, analysis,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        hallucination_detected=hall["hallucination_detected"],
+        flagged_terms=",".join(hall["flagged_terms"]),
     )
-    latency_ms = (datetime.now() - start_time).total_seconds() * 1000
 
-    return message.content[0].text, round(latency_ms)
-
-
-def check_format(analysis):
-    required = ["TREND:", "OBSERVATIONS:", "SIGNAL:"]
-    return all(field in analysis for field in required)
-
-
-def log_results(results):
-    log_file = "results.json"
-    existing = []
-    if os.path.exists(log_file):
-        with open(log_file, "r") as f:
-            existing = json.load(f)
-    existing.append(results)
-    with open(log_file, "w") as f:
-        json.dump(existing, f, indent=2)
+    return {
+        "ticker": ticker,
+        "strategy": strategy_name,
+        "latency_ms": latency_ms,
+        "format_correct": format_correct,
+        "signal": signal,
+        "analysis": analysis,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "hallucination_detected": hall["hallucination_detected"],
+        "flagged_terms": hall["flagged_terms"],
+    }
 
 
-def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="AI Stock Analyzer")
     parser.add_argument(
         "--ticker", nargs="+", default=["AAPL", "GOOGL", "MSFT"],
-        help="Ticker symbols to analyze e.g. --ticker NVDA TSLA"
+        help="Ticker symbols to analyze e.g. --ticker NVDA TSLA",
     )
     parser.add_argument(
         "--strategy",
-        choices=["zero_shot", "few_shot", "chain_of_thought", "all"],
+        choices=["zero_shot", "few_shot", "chain_of_thought", "self_critique", "all"],
         default="all",
-        help="Prompting strategy to use"
+        help="Prompting strategy to use",
     )
     args = parser.parse_args()
 
+    create_db()
+
+    tickers = [t.upper() for t in args.ticker]
     strategies_to_run = list(STRATEGIES.keys()) if args.strategy == "all" else [args.strategy]
-    all_results = []
+
+    print("\nFetching stock data...")
+    price_data_list = await asyncio.gather(*[get_stock_data(ticker) for ticker in tickers])
+    ticker_prices = dict(zip(tickers, price_data_list))
+
+    print("Running analysis...\n")
+    tasks = [
+        analyze_ticker_strategy(ticker, ticker_prices[ticker], strategy)
+        for ticker in tickers
+        for strategy in strategies_to_run
+    ]
+    results = await asyncio.gather(*tasks)
 
     print("\nStock Analysis Report")
     print("=" * 60)
 
-    for ticker in args.ticker:
-        print(f"\nAnalyzing {ticker}...")
-        price_data = get_stock_data(ticker)
-        ticker_results = {
-            "ticker": ticker,
-            "timestamp": datetime.now().isoformat(),
-            "strategies": []
-        }
-
-        for strategy_name in strategies_to_run:
-            print(f"  Running {strategy_name}...")
-            analysis, latency = analyze_stock(ticker, price_data, strategy_name)
-            if not analysis:
-                continue
-
-            format_correct = check_format(analysis)
-            ticker_results["strategies"].append({
-                "strategy": strategy_name,
-                "latency_ms": latency,
-                "format_correct": format_correct,
-                "analysis": analysis
-            })
-
-            print(f"\n  [{strategy_name}] ({latency}ms) (format: {'✓' if format_correct else '✗'})")
-            print(f"  {analysis}")
+    for result in results:
+        if result:
+            fmt = "✓" if result["format_correct"] else "✗"
+            tokens = f"{result['input_tokens']}in/{result['output_tokens']}out"
+            print(f"\n  [{result['ticker']}] [{result['strategy']}] ({result['latency_ms']}ms) (format: {fmt}) (tokens: {tokens})")
+            if result["hallucination_detected"]:
+                print(f"  ⚠ Hallucination flags: {', '.join(result['flagged_terms'])}")
+            print(f"  {result['analysis']}")
             print(f"  {'-' * 50}")
 
-        all_results.append(ticker_results)
-        log_results(ticker_results)
-
-    print("\nResults logged to results.json")
-    print("Run 'python report.py' to generate the HTML report")
+    print("\nResults saved to results.db")
+    generate_report([r for r in results if r])
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
