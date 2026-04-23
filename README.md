@@ -132,7 +132,7 @@ Analyzing AAPL...
 
 ## Why I built this
 I wanted to answer a question I kept seeing come up in AI engineering roles: does prompting strategy actually matter for structured output tasks, or is explicit output formatting the thing that drives consistency?
-I picked stock analysis as the domain because I was already designing an AI FinTech curriculum at work and wanted hands-on experience with financial data APIs. I also needed to learn Python, which kept showing up as a gap in my stack.
+I picked stock analysis as the domain because I was already designing an AI FinTech curriculum at work and wanted hands-on experience with financial data APIs.
 After running 9 experiments across 3 tickers and 3 strategies, I got a real answer:
 Format compliance was 100% across all three strategies — meaning when you give the model an explicit output structure, it follows it regardless of prompting approach. But strategy made a significant difference in latency and reasoning depth. Few-shot was 3x faster than chain-of-thought (3630ms vs 11124ms avg), while chain-of-thought produced noticeably more detailed step-by-step reasoning.
 The practical takeaway: for a production system where users are waiting, use few-shot. For a research context where reasoning quality matters more than speed, chain-of-thought is worth the tradeoff.
